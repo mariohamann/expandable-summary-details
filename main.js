@@ -1,24 +1,87 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+class ExpandableComponent extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          position: relative;
+        }
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+        summary {
+          cursor: pointer;
+          padding: 10px;
+          border: 1px solid #ccc;
+          background: #f9f9f9;
+        }
 
-setupCounter(document.querySelector('#counter'))
+        details > summary {
+          list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+          display: none;
+        }
+
+        summary[aria-hidden="true"] {
+          height: 32px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        details {
+          display: block;
+        }
+
+        details[open] summary {
+          display: none;
+        }
+
+        .content {
+          padding: 10px;
+          border: 1px solid #ccc;
+        }
+
+        #toggle {
+          display: block;
+          margin-top: 10px;
+          padding: 5px 10px;
+          cursor: pointer;
+        }
+      </style>
+      <details>
+        <summary aria-hidden="true"><slot name="clone"></slot></summary>
+        <div class="content">
+          <slot></slot>
+        </div>
+      </details>
+      <button id="toggle">Toggle</button>
+    `;
+  }
+
+  connectedCallback() {
+    this.cloneContentToLightDOM();
+
+    this.shadowRoot.querySelector('#toggle').addEventListener('click', () => {
+      const details = this.shadowRoot.querySelector('details');
+      details.open = !details.open;
+    });
+  }
+
+  cloneContentToLightDOM() {
+    const slot = document.createElement('div');
+    slot.setAttribute('slot', 'clone');
+
+    // Clone and move the content from the original slot to the new slot
+    const nodes = Array.from(this.childNodes);
+    nodes.forEach(node => {
+      const clone = node.cloneNode(true);
+      slot.appendChild(clone);
+    });
+
+    // Append the new slot to the LightDOM to preserve styles from LightDOM
+    this.appendChild(slot);
+  }
+}
+
+customElements.define('expandable-component', ExpandableComponent);
